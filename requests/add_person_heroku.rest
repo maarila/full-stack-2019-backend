@@ -1,0 +1,7 @@
+POST https://fs-2019-phone-book.herokuapp.com/api/persons
+Content-Type: application/json
+
+{
+  "name": "Teppo Testaaja jr.",
+  "number": "999-666333"
+}
