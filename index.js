@@ -1,7 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cors = require('cors');
+const Person = require('./modules/person');
 const app = express();
 
 morgan.token('body', function(req, res) {
@@ -16,31 +18,10 @@ app.use(express.static('build'));
 app.use(cors());
 app.use(bodyParser.json());
 
-let persons = [
-  {
-    id: 1,
-    name: 'Arto Hellas',
-    number: '045-1236543'
-  },
-  {
-    id: 2,
-    name: 'Arto Järvinen',
-    number: '041-21423123'
-  },
-  {
-    id: 3,
-    name: 'Lea Kutvonen',
-    number: '040-4323234'
-  },
-  {
-    id: 4,
-    name: 'Martti Tienari',
-    number: '09-784232'
-  }
-];
-
 app.get('/api/persons', (req, res) => {
-  res.json(persons);
+  Person.find({}).then(persons => {
+    res.json(persons.map(person => person.toJSON()));
+  });
 });
 
 app.post('/api/persons', (req, res) => {
@@ -51,24 +32,14 @@ app.post('/api/persons', (req, res) => {
       error: 'Name or number missing'
     });
   }
-
-  const nameExists = persons.find(person => person.name === body.name);
-
-  if (nameExists) {
-    return res.status(400).json({
-      error: 'Name must be unique'
-    });
-  }
-
-  const newPerson = {
-    id: Math.floor(Math.random() * 10000000),
+  const newPerson = new Person({
     name: body.name,
     number: body.number
-  };
+  });
 
-  persons = persons.concat(newPerson);
-
-  res.json(newPerson);
+  newPerson.save().then(savedPerson => {
+    res.json(savedPerson.toJSON());
+  });
 });
 
 app.get('/info', (req, res) => {
@@ -91,7 +62,7 @@ app.delete('/api/persons/:id', (req, res) => {
   res.status(204).end();
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
