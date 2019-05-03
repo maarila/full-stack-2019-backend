@@ -37,30 +37,65 @@ app.post('/api/persons', (req, res) => {
     number: body.number
   });
 
-  newPerson.save().then(savedPerson => {
-    res.json(savedPerson.toJSON());
-  });
+  newPerson
+    .save()
+    .then(savedPerson => {
+      res.json(savedPerson.toJSON());
+    })
+    .catch(error => next(error));
 });
 
 app.get('/info', (req, res) => {
-  res.send(
-    `<p>Puhelinluettelossa ${persons.length} henkilön tiedot</p>${new Date()}`
-  );
+  Person.countDocuments({}).then(count => {
+    res.send(`<p>Puhelinluettelossa ${count} henkilön tiedot</p>${new Date()}`);
+  });
 });
 
 app.get('/api/persons/:id', (req, res) => {
-  const person = persons.find(person => person.id === Number(req.params.id));
-  if (person) {
-    res.json(person);
-  } else {
-    res.status(404).end();
-  }
+  Person.findById(req.params.id)
+    .then(person => {
+      if (person) {
+        res.json(person.toJSON());
+      } else {
+        res.status(204).end();
+      }
+    })
+    .catch(error => next(error));
+});
+
+app.put('/api/persons/:id', (req, res) => {
+  const body = req.body;
+
+  const person = {
+    name: body.name,
+    number: body.number
+  };
+
+  Person.findByIdAndUpdate(req.params.id, person, { new: true })
+    .then(updatedPerson => {
+      res.json(updatedPerson.toJSON());
+    })
+    .catch(error => next(error));
 });
 
 app.delete('/api/persons/:id', (req, res) => {
-  persons = persons.filter(person => person.id !== Number(req.params.id));
-  res.status(204).end();
+  Person.findByIdAndRemove(req.params.id)
+    .then(result => {
+      res.status(204).end();
+    })
+    .catch(error => next(error));
 });
+
+const errorHandler = (error, req, res, next) => {
+  console.error(error.message);
+
+  if (error.name === 'CastError' && error.kind === 'ObjectId') {
+    return res.status(400).send({ error: 'malformatted id' });
+  }
+  next(error);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
