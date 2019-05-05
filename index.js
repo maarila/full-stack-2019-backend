@@ -24,7 +24,7 @@ app.get('/api/persons', (req, res) => {
   });
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body;
 
   if (!body.name || !body.number) {
@@ -91,6 +91,16 @@ const errorHandler = (error, req, res, next) => {
 
   if (error.name === 'CastError' && error.kind === 'ObjectId') {
     return res.status(400).send({ error: 'malformatted id' });
+  } else if (error.name === 'ValidationError') {
+    if (error.message.includes('name')) {
+      return res
+        .status(400)
+        .send({ error: 'minimum length for name: 3 characters' });
+    } else if (error.message.includes('number')) {
+      return res
+        .status(400)
+        .send({ error: 'minimum length for number: 8 characters' });
+    }
   }
   next(error);
 };
